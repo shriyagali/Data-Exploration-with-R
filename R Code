@@ -1,0 +1,179 @@
+library(tidyverse)
+library(knitr)
+library(dplyr)
+library(plyr)
+library(MASS)
+library(tibble)
+library(ggplot2)
+library(kableExtra)
+#a
+df <- data.frame(count(gun_deaths$month))
+df %>%
+  kable(caption = "Gun deaths in the United States (2012-2014), by month",
+        col.names = c("Month", "Number of deaths"))
+knitr::kable(df) %>%
+  kable_styling(df,bootstrap_options = "striped", full_width=F)
+
+
+#b
+month = c(1,2,3,4,5,6,7,8,9,10,11,12)
+mymonths <- c("Jan","Feb","Mar",
+              "Apr","May","Jun",
+              "Jul","Aug","Sep",
+              "Oct","Nov","Dec")
+MonthAbb <- mymonths[month]
+df <- data.frame(df, MonthAbb)
+df <- df[-1]
+ggplot(df, aes(x=MonthAbb, y=freq))+ geom_bar(stat="identity") + 
+  labs(x="Month", y="No. of Deaths")
+
+
+#c
+df <- data.frame(count(gun_deaths$intent))
+ggplot(df, aes(x=reorder(x, -freq), y=freq))+ geom_bar(stat="identity") + 
+  labs(x="Intent", y="No. of Deaths") + geom_text(aes(label=freq), position=position_dodge(width=0.9), vjust=-0.25)
+
+#d
+mean(gun_deaths$sex =="F")
+means <- aggregate(age ~  sex ,gun_deaths,mean)
+df4 <- data.frame(means)
+age <-round(means$age,2)
+means[-2]
+ggplot(data=gun_deaths, aes(x=age, y=sex)) + geom_boxplot() +
+  stat_summary(fun=mean, colour="red", geom="point", shape=18, size=3,show.legend = FALSE) + 
+  geom_text(data = means, aes(label = age, y = sex))
+
+#e
+df <- data.frame(count(filter(gun_deaths, year== "2012", race == "White" , sex == "M" , education %in% c('HS/GED', 'BA+', "Some college"))))
+nrow(df)
+
+
+df <- data.frame(count(filter(gun_deaths, year== "2012", race == "White" , sex == "M" , education %in% c('HS/GED', 'BA+', "Some college"))))
+#boxplot(age~sex,data=gun_deaths,col=(c("gold","darkgreen")), main="Age of gun death victims, by sex",
+#        xlab="Age", ylab="Sex")               
+
+#means <- mean(gun_deaths$age[gun_deaths$sex==F], na.rm=T)
+#df3 <- data.frame(means)
+#ggplot(data=gun_deaths, aes(x=gun_deaths$age, y=gun_deaths$sex)) + geom_boxplot() +
+#  stat_summary(fun=mean, colour="red", geom="point", 
+#               shape=18, size=3,show.legend = FALSE) + 
+#  geom_text(data = df3, aes(label = gun_deaths$age, y = gun_deaths$sex))
+
+#f
+season_deaths<-mutate(gun_deaths,
+                      season=as.factor(mapvalues(month, c(1,2,3,4,5,6,7,8,9,10,11,12), c("Winter","Winter","Winter", "Spring","Spring","Spring","Summer",
+                                                                                         "Summer","Summer","Fall","Fall","Fall"))))
+season_deaths<-as.tibble(season_deaths)
+season_gun_death=dplyr::count(season_deaths,season)
+df2 <- data.frame(arrange(season_gun_death,desc(n)))
+df2
+head(df2,1)%>%
+  kable(caption="Gun deaths per season",
+        col.names=c("Month","Number of deaths"))
+knitr::kable(head(df2,1)) %>%
+  kable_styling(df,bootstrap_options = "striped", full_width=F)
+
+#g
+t1 <- table(gun_deaths$race,gun_deaths$intent, useNA="no")
+t1
+df<-round(prop.table(t1,1), digits=2)
+df<-as.data.frame.matrix(df)
+df %>%
+  kable(caption="Relationship between race and intent"
+  )
+knitr::kable(df) %>%
+  kable_styling(df,bootstrap_options = "striped", full_width=F)
+
+#h
+police_deaths<-mutate(gun_deaths,
+                      police=as.factor(mapvalues(police, c(0,1), c("No","Yes"))))
+police_three_data <- ddply(police_deaths, ~race+police, summarize,
+                           mean.age= mean(age, na.rm = TRUE))
+police_three_data%>%
+  kable(caption="Police involvement by intent"
+  )
+knitr::kable(police_three_data) %>%
+  kable_styling(df,bootstrap_options = "striped", full_width=F)
+
+police_deaths<-mutate(gun_deaths, police=as.factor(mapvalues(police, c(0,1), c("No","Yes"))))
+race_table <- table(police_deaths$race, police_deaths$police)
+prop.table(race_table)
+addmargins(race_table)
+round(100*prop.table(race_table,1), digits=2)
+
+
+#2
+#a
+names(weightLoss)[1] <- "id"
+names(weightLoss)[3:5] <- c("WeightLoss_month1", "WeightLoss_month2", "WeightLoss_month3")
+names(weightLoss) [6:8] <- c("SelfEsteem_month1", "SelfEsteem_month2", "SelfEsteem_month3")
+str(weightLoss)
+
+#b
+library(reshape)
+df <- data.frame(weightLoss)
+wl.data <- data.frame(melt(data = df, id.vars = c("id", "group"), measure.vars = c("WeightLoss_month1", "WeightLoss_month2","WeightLoss_month3")))
+
+#c
+names(wl.data)[3:4] <- c("WeightLoss_Month","WeightLoss")
+str(wl.data)
+
+#d
+we.data <- data.frame(melt(data = df, id.vars = c("id", "group"), measure.vars = c("SelfEsteem_month1", "SelfEsteem_month2","SelfEsteem_month3")))
+names(we.data)[3:4] <- c("SelEsteem_Month","SelfEsteem_Score")
+str(we.data)
+
+#e
+data.long <- cbind(wl.data, we.data)[,-5:-6]
+data.long <- data.long[-c(1,36,71),]
+
+data.long <- merge(wl.data,we.data,by=c("id","group"))
+
+#f
+table(data.long$group, data.long$WeightLoss_Month)
+
+#g
+hg <- ggplot(data.long, aes(x=as.factor(WeightLoss), fill=group))
+hg <- hg + labs(x = "Weight in pounds", y = "Count", title = "Weight Loss by Group within 3 months") + geom_bar() 
+hg <- hg + facet_grid (WeightLoss_Month ~ group)
+hg <- hg + geom_line(aes(y = SelfEsteem_Score, fill=group)) 
+hg <- hg + geom_point(aes(y = SelfEsteem_Score, colour = "blue")) 
+hg <- hg + theme(legend.position='bottom', panel.grid.major.x = element_blank(), 
+                 panel.grid.minor.x = element_blank(),
+                 panel.grid.minor.y = element_blank(), 
+                 legend.key.size = unit(.5, "cm"), 
+                 axis.ticks.y =element_blank(), 
+                 plot.margin = unit( c(1,0,0,0) , units = "lines" ),
+                 plot.title = element_text(size = 30, lineheight = .8,
+                                           vjust = 1, family = "Bauhaus 93", hjust = 0.5))
+hg <- hg + scale_fill_discrete(guide_legend(title ="Group"))
+hg
+
+#h
+ggplot(weightLoss, aes(x= WeightLoss_month1, y = SelfEsteem_month1, color = group)) + theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Weight Loss", y = "Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 1") +
+  geom_point() + #geom_line() +
+  facet_wrap(~ group)
+
+
+#i
+ggplot(weightLoss, aes(x= WeightLoss_month2, y = SelfEsteem_month2, color = group)) + theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(x = "Weight Loss", y = "Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 2") +
+  geom_point() + #geom_line() +
+  facet_wrap(~ group)
+
+ggplot(weightLoss, aes(x= WeightLoss_month3, y = SelfEsteem_month3, color = group)) + theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Weight Loss", y = "Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 3") +
+  geom_point() + 
+  facet_wrap(~ group)
+
+#j
+ggplot(weightLoss) + 
+  geom_boxplot(aes(x=group, y=WeightLoss_month1)) + coord_flip() + theme(plot.title = element_text(hjust = 0.5)) +
+  geom_boxplot(aes(x=group, y=SelfEsteem_month1), fill = "chartreuse4") +
+  labs(x = "Group", y = "Weight Loss      Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 1") 
+
+#l
+Weight_Kg <- data.long$WeightLoss * 2.204
+data.long <- data.frame(data.long, Weight_Kg)
+str(data.long)
