@@ -10,4 +10,7 @@ Data : Gun deaths in USA between 2012 - 2014
 
 Data: weighLoss.csv
 * Using melt() function to reshape dataset depending on the various variables.
-* Generating a histogram, boxplot and scatterplot to get the count of people's weight in pounds depending on the factors - Control, Diet, DietEx
+* Generating a histogram to get the count of people's weight in pounds depending on the factors - Control, Diet, DietEx within 3 months
+* Generating boxplot and scatterplot to get Weight vs self esteem information for Month 1, 2 and 3.
+* Intepretation from the above plots.
+* Conversion of weight from pound to kg.
