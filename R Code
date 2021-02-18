@@ -6,7 +6,9 @@ library(MASS)
 library(tibble)
 library(ggplot2)
 library(kableExtra)
-#a
+
+# Summarizing the gun deaths per month and fomatting using kable()
+
 df <- data.frame(count(gun_deaths$month))
 df %>%
   kable(caption = "Gun deaths in the United States (2012-2014), by month",
@@ -15,7 +17,8 @@ knitr::kable(df) %>%
   kable_styling(df,bootstrap_options = "striped", full_width=F)
 
 
-#b
+# Generating chart using ggplot() for the above data with labels.
+
 month = c(1,2,3,4,5,6,7,8,9,10,11,12)
 mymonths <- c("Jan","Feb","Mar",
               "Apr","May","Jun",
@@ -28,12 +31,15 @@ ggplot(df, aes(x=MonthAbb, y=freq))+ geom_bar(stat="identity") +
   labs(x="Month", y="No. of Deaths")
 
 
-#c
+# Generating a bar chart that identifies gun deaths associated with type of intent cause of death. 
+# The highest number of gun deaths are caused by suicide as the intent cause of death.
+
 df <- data.frame(count(gun_deaths$intent))
 ggplot(df, aes(x=reorder(x, -freq), y=freq))+ geom_bar(stat="identity") + 
   labs(x="Intent", y="No. of Deaths") + geom_text(aes(label=freq), position=position_dodge(width=0.9), vjust=-0.25)
 
-#d
+# Boxplot visualizing the age of gun death victims by gender.
+
 mean(gun_deaths$sex =="F")
 means <- aggregate(age ~  sex ,gun_deaths,mean)
 df4 <- data.frame(means)
@@ -43,7 +49,8 @@ ggplot(data=gun_deaths, aes(x=age, y=sex)) + geom_boxplot() +
   stat_summary(fun=mean, colour="red", geom="point", shape=18, size=3,show.legend = FALSE) + 
   geom_text(data = means, aes(label = age, y = sex))
 
-#e
+# White males with at least a high school education were killed by guns in 2012
+
 df <- data.frame(count(filter(gun_deaths, year== "2012", race == "White" , sex == "M" , education %in% c('HS/GED', 'BA+', "Some college"))))
 nrow(df)
 
@@ -59,7 +66,10 @@ df <- data.frame(count(filter(gun_deaths, year== "2012", race == "White" , sex =
 #               shape=18, size=3,show.legend = FALSE) + 
 #  geom_text(data = df3, aes(label = gun_deaths$age, y = gun_deaths$sex))
 
-#f
+
+
+# Summer is the season of the year that has the most gun deaths.
+
 season_deaths<-mutate(gun_deaths,
                       season=as.factor(mapvalues(month, c(1,2,3,4,5,6,7,8,9,10,11,12), c("Winter","Winter","Winter", "Spring","Spring","Spring","Summer",
                                                                                          "Summer","Summer","Fall","Fall","Fall"))))
@@ -72,8 +82,12 @@ head(df2,1)%>%
         col.names=c("Month","Number of deaths"))
 knitr::kable(head(df2,1)) %>%
   kable_styling(df,bootstrap_options = "striped", full_width=F)
+  
+  
 
-#g
+# Whites who are killed by guns are most likely to die because of suicide,
+# whereas Blacks and Hispanics who are killed by guns are most likely to die due to homicide.
+
 t1 <- table(gun_deaths$race,gun_deaths$intent, useNA="no")
 t1
 df<-round(prop.table(t1,1), digits=2)
@@ -84,55 +98,80 @@ df %>%
 knitr::kable(df) %>%
   kable_styling(df,bootstrap_options = "striped", full_width=F)
 
-#h
-police_deaths<-mutate(gun_deaths,
-                      police=as.factor(mapvalues(police, c(0,1), c("No","Yes"))))
-police_three_data <- ddply(police_deaths, ~race+police, summarize,
-                           mean.age= mean(age, na.rm = TRUE))
-police_three_data%>%
-  kable(caption="Police involvement by intent"
-  )
-knitr::kable(police_three_data) %>%
-  kable_styling(df,bootstrap_options = "striped", full_width=F)
 
-police_deaths<-mutate(gun_deaths, police=as.factor(mapvalues(police, c(0,1), c("No","Yes"))))
-race_table <- table(police_deaths$race, police_deaths$police)
-prop.table(race_table)
-addmargins(race_table)
-round(100*prop.table(race_table,1), digits=2)
+
+# For categorical variables “month”, “year”, “intent”, “sex”, “place”, “education” and “season”, using Chi-square test to detect their relationships with “police”.
+# And conclude that the police-involved gun deaths are significantly different from other gun deaths at level 0.01 
+# with respect to the variables “intent”, “sex”, “place” and “education”.
+
+chisq.test(table(gun_deaths$police, gun_deaths$month))
+chisq.test(table(gun_deaths$police, gun_deaths$year))
+chisq.test(table(gun_deaths$police, gun_deaths$intent))
+chisq.test(table(gun_deaths$police, gun_deaths$sex))
+chisq.test(table(gun_deaths$police, gun_deaths$place))
+chisq.test(table(gun_deaths$police, gun_deaths$education))
+chisq.test(table(gun_deaths$police, gun_deaths$season))
+
+
+
+# For the numerical variable “age”, using two-sample t-test which showing that 
+# the average victim age in the police-involved gun deaths is significantly lower than that of the other gun deaths.
+
+g0 <- gun_deaths$age[gun_deaths$police == 0]
+g1 <- gun_deaths$age[gun_deaths$police == 1]
+t.test(g0, g1)
 
 
 #2
-#a
+# Renaming the 1st column to “id"; the 3rd to the 5th columns respectively to “Weight-
+# Loss_month1", “WeightLoss_month2", and “WeightLoss_month3"; and the 6th to the 8th
+# columns to “SelfEsteem_month1", “SelfEsteem_month2", “SelfEsteem_month3", respectively.
+
 names(weightLoss)[1] <- "id"
 names(weightLoss)[3:5] <- c("WeightLoss_month1", "WeightLoss_month2", "WeightLoss_month3")
 names(weightLoss) [6:8] <- c("SelfEsteem_month1", "SelfEsteem_month2", "SelfEsteem_month3")
 str(weightLoss)
 
-#b
+
+# Using the melt() function from the “Reshape2" package to reshape the dataset based on the
+# WeightLoss_month variables into a single column. Use “id" and “group" as the “id variables". And calling this reshaped data frame “wl.data".
+
 library(reshape)
 df <- data.frame(weightLoss)
 wl.data <- data.frame(melt(data = df, id.vars = c("id", "group"), measure.vars = c("WeightLoss_month1", "WeightLoss_month2","WeightLoss_month3")))
 
-#c
+
+# Renaming the 3rd and 4th columns of wl.data to “WeightLoss_Month" and “WeightLoss".
+
 names(wl.data)[3:4] <- c("WeightLoss_Month","WeightLoss")
 str(wl.data)
 
-#d
+
+# Using melt() function to reshape the data based on “SelfEsteem_month" variables. 
+# And calling this dataset “we.data". Rename the 3rd and 4th columns of we.data to “SelfEsteem_Month" and “SelfEsteem_Score".
+
 we.data <- data.frame(melt(data = df, id.vars = c("id", "group"), measure.vars = c("SelfEsteem_month1", "SelfEsteem_month2","SelfEsteem_month3")))
 names(we.data)[3:4] <- c("SelEsteem_Month","SelfEsteem_Score")
 str(we.data)
 
-#e
+
+# Combining w1.data and w2.data and calling this dataset as data.long
+
 data.long <- cbind(wl.data, we.data)[,-5:-6]
 data.long <- data.long[-c(1,36,71),]
 
 data.long <- merge(wl.data,we.data,by=c("id","group"))
 
-#f
+
+# Using the Weight Loss (pounds) as a categorical data and get the weight loss frequencies by
+# groups (Control, Diet, DietEx)
+
 table(data.long$group, data.long$WeightLoss_Month)
 
-#g
+
+# Using the dataset “data.long" and the ggplot() function from “ggplot2" package to create
+# the histogram to get the count of people's weight in pounds depending on the factors - Control, Diet, DietEx within 3 months.
+
 hg <- ggplot(data.long, aes(x=as.factor(WeightLoss), fill=group))
 hg <- hg + labs(x = "Weight in pounds", y = "Count", title = "Weight Loss by Group within 3 months") + geom_bar() 
 hg <- hg + facet_grid (WeightLoss_Month ~ group)
@@ -149,14 +188,18 @@ hg <- hg + theme(legend.position='bottom', panel.grid.major.x = element_blank(),
 hg <- hg + scale_fill_discrete(guide_legend(title ="Group"))
 hg
 
-#h
+
+# Using the dataset “weightLoss" and the ggplot() function from “ggplot2" package to create
+# the scatterplot to get weighloss vs self esteem for Month 1.
+
 ggplot(weightLoss, aes(x= WeightLoss_month1, y = SelfEsteem_month1, color = group)) + theme(plot.title = element_text(hjust = 0.5)) +
   labs(x = "Weight Loss", y = "Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 1") +
   geom_point() + #geom_line() +
   facet_wrap(~ group)
 
+# Using the dataset “weightLoss" and the ggplot() function from “ggplot2" package to create
+# the scatterplot to get weighloss vs self esteem for Month 2 & 3.
 
-#i
 ggplot(weightLoss, aes(x= WeightLoss_month2, y = SelfEsteem_month2, color = group)) + theme(plot.title = element_text(hjust = 0.5)) + 
   labs(x = "Weight Loss", y = "Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 2") +
   geom_point() + #geom_line() +
@@ -167,13 +210,23 @@ ggplot(weightLoss, aes(x= WeightLoss_month3, y = SelfEsteem_month3, color = grou
   geom_point() + 
   facet_wrap(~ group)
 
-#j
+# Using the dataset “weightLoss" and the ggplot() function from “ggplot2" package to create
+# the boxplot to get weighloss vs self esteem for Month 1.
+
 ggplot(weightLoss) + 
   geom_boxplot(aes(x=group, y=WeightLoss_month1)) + coord_flip() + theme(plot.title = element_text(hjust = 0.5)) +
   geom_boxplot(aes(x=group, y=SelfEsteem_month1), fill = "chartreuse4") +
   labs(x = "Group", y = "Weight Loss      Self-Esteem Score", title = "Weight Loss vs. Self-Esteem - Month 1") 
+  
+# The graphic data visualization offers a clear picture of the relationship between weight loss and self-esteem during the 3-month weight loss program.
+# Three groups in the data also showed different patterns of of self-esteem:
+# ● Higher weight loss is associated with higher self-esteem.
+# ● The DietEx group lost more weight and the control group lost less weight in the first 2 months, while the data showed the same trend in month 3.
+# ● The DietEx group has the widest spread for weight loss, but a narrow and high range for self-esteem.
 
-#l
+
+# Add a new variable to the long.data, with the subjects's weight in kilograms (kg) (1 kg = 2.204 pounds).
+
 Weight_Kg <- data.long$WeightLoss * 2.204
 data.long <- data.frame(data.long, Weight_Kg)
 str(data.long)
